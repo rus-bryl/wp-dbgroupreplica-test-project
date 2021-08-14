@@ -1,0 +1,120 @@
+---
+# tasks file for config_proxysql
+#- name: Change ProxySQL Admin Password
+#  proxysql_global_variables:
+#    login_user: admin
+#    login_password: admin
+#    variable: admin-admin_credentials
+#    value: admin:"{{ proxysql_admin_password }}"
+#    load_to_runtime: yes
+#    save_to_disk: yes
+
+- name: Replication Hostgroups
+  proxysql_replication_hostgroups:
+    login_user: admin
+    login_password: admin
+    writer_hostgroup: 0
+    reader_hostgroup: 1
+    state: present
+    load_to_runtime: yes
+    save_to_disk: yes 
+
+- name: Add Backend Servers to Writer Group
+  proxysql_backend_servers:
+    login_user: admin
+    login_password: admin
+    hostname: "{{ hostvars[item].ansible_default_ipv4.address }}"
+    hostgroup_id: 0
+    load_to_runtime: yes
+    save_to_disk: yes
+    state: present
+#  loop: "{{ groups['db_masters'] }}"
+  loop: "{{ groups['db_servers'] }}"
+
+- name: Add Backend Servers to Reader Group
+  proxysql_backend_servers:
+    login_user: admin
+    login_password: admin
+    hostname: "{{ hostvars[item].ansible_default_ipv4.address }}"
+    hostgroup_id: 1
+    weight: 1000
+    load_to_runtime: yes
+    save_to_disk: yes
+    state: present
+#  loop: "{{ groups['db_slaves'] }}"
+  loop: "{{ groups['db_servers'] }}"
+
+- name: Create user for Wordpress
+  proxysql_mysql_users:
+    login_user: admin
+    login_password: admin
+    username: "{{ mysql_wp_user }}"
+    password: "{{ mysql_wp_password }}"
+    default_hostgroup: 0
+    state: present
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Configure Monitoring mysql-monitor_connect_interval
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_connect_interval
+    value: 2000
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Configure Monitoring mysql-monitor_ping_interval
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_ping_interval
+    value: 2000
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Configure Monitoring mysql-monitor_read_only_interval
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_read_only_interval
+    value: 2000
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Configure Monitoring mysql-monitor_connect_timeout
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_connect_timeout
+    value: 1000
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Configure Monitoring mysql-monitor_ping_timeout
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_ping_timeout
+    value: 500
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Add query rule 1
+  proxysql_query_rules:
+    login_user: admin
+    login_password: admin
+    active: 1
+    match_pattern: '^SELECT.*'
+    destination_hostgroup: 1
+    apply: 0
+
+- name: Add query rule 2
+  proxysql_query_rules:
+    login_user: admin
+    login_password: admin
+    active: 1
+    match_pattern: '^SELECT.*FOR UPDATE'
+    destination_hostgroup: 0
+    apply: 1
+        

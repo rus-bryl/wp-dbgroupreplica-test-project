@@ -1,0 +1,31 @@
+---
+# tasks file for config_wordpress
+- name: Site config
+  template:
+    src: "wordpress.j2"
+    dest: "/etc/nginx/sites-available/{{ project_name }}"
+  notify: Reload Nginx
+
+- name: Site enable
+  file:
+    src: "/etc/nginx/sites-available/{{ project_name }}"
+    dest: "/etc/nginx/sites-enabled/{{ project_name }}"
+    state: link
+  tags: [ wordpress ]
+  notify: Reload Nginx
+
+- name: Default Site remove
+  file:    
+    path: "/etc/nginx/sites-enabled/default"
+    state: absent
+  tags: [ wordpress ]
+  notify: Reload Nginx
+
+  
+- name: Set up wp-config
+  template:
+    src: "wp-config.php.j2"
+    dest: "/var/www/{{ project_name }}/wp-config.php"
+  tags: [ wordpress ]
+#  when: mysql_config_status.changed or nginx_config_status.changed
+  notify: Reload Nginx

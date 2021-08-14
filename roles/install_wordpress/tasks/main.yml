@@ -1,0 +1,28 @@
+---
+# tasks file for install_wordpress
+- name: Download and unpack latest WordPress
+  unarchive:
+    src: https://wordpress.org/latest.tar.gz
+    dest: "/var/www"
+    remote_src: yes
+    creates: "/var/www/{{ project_name }}"
+  tags: [ wordpress ]
+
+- name: Set ownership
+  file:
+    path: "/var/www"
+    state: directory
+    recurse: yes
+    owner: www-data
+    group: www-data
+  tags: [ wordpress ]
+
+- name: Set permissions for directories
+  shell: "/usr/bin/find /var/www/{{ project_name }}/ -type d -not -perm 0750 -print >&1 -exec chmod 750 {} \\;"
+  changed_when: False
+  tags: [ wordpress ]
+
+- name: Set permissions for files
+  shell: "/usr/bin/find /var/www/{{ project_name }}/ -type f -not -perm 0640 -print >&1 -exec chmod 640 {} \\;"
+  changed_when: False
+  tags: [ wordpress ]

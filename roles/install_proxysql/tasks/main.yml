@@ -1,0 +1,17 @@
+---
+# tasks file for install_proxysql
+- name: Install ProxySQL
+  apt:
+    deb: https://github.com/sysown/proxysql/releases/download/v2.2.0/proxysql_2.2.0-ubuntu20_amd64.deb
+
+- name: Start Service ProxySQL
+  systemd: name=proxysql state=started
+
+- name: Install Mysql-Client
+  apt:
+    name: 
+    - mysql-client
+    - python3-pymysql
+    state: latest
+    update_cache: yes
+

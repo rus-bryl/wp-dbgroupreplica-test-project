@@ -1,0 +1,39 @@
+[webservers]
+webserver ansible_host=192.168.1.132
+
+[proxysql]
+webserver ansible_host=192.168.1.132
+
+[db_masters]
+dbmaster1 ansible_host=192.168.1.135
+
+[db_slaves]
+dbslave1 ansible_host=192.168.1.134
+dbslave2 ansible_host=192.168.1.133
+dbslave3 ansible_host=192.168.1.129
+dbslave4 ansible_host=192.168.1.128
+
+[db_servers:children]
+db_masters
+db_slaves
+
+[all:vars]
+# Basic Settings
+time_zone="Europe/Kiev"
+
+# MySQL Settings
+mysql_root_password="mysqlpassword"
+mysql_db="wordpress"
+mysql_wp_user="wpuser"
+mysql_wp_password="wppassword"
+mysql_replica_user="replicauser"
+mysql_replica_password="replicapassword"
+
+# ProxySQL Settings
+proxysql_admin_password="proxyadminpassword"
+
+# HTTP Settings
+http_host="brm.smn.com.ua"
+http_conf="your_domain.conf"
+http_port="80"
+project_name="wordpress"

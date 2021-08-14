@@ -1,0 +1,22 @@
+---
+# tasks file for install_mysql
+- name: Install Percona repository
+  apt:
+    deb: "https://repo.percona.com/percona/apt/percona-release_latest.generic_all.deb"
+    state: present
+    update_cache: yes
+
+- name: Install Mysql-Server
+  apt: 
+    name:
+      - mysql-server
+      - mysql-client
+      - python3-pymysql
+      - python3-mysqldb
+      - percona-xtrabackup-80
+      - qpress 
+    update_cache: yes 
+    state: latest
+
+- name: Start mysql
+  systemd: name=mysql state=started

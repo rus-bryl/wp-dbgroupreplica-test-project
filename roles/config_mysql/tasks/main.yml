@@ -1,0 +1,142 @@
+---
+# tasks file for config_mysql
+- name: Grab the SSL assets from one server
+  slurp:
+    src: "/var/lib/mysql/{{ item }}"
+  become: true
+  run_once: true
+  register: pki_certs
+  with_items:
+    - ca.pem
+    - ca-key.pem
+    - server-cert.pem
+    - server-key.pem
+    - client-cert.pem
+    - client-key.pem
+  tags: [ mysql ]
+
+- name: Write the SSL assets to the remaining servers
+  copy:
+    dest: "/var/lib/mysql/{{ item.item }}"
+    content: "{{ item.content | b64decode }}"
+    owner: mysql
+    group: mysql
+    mode: "0600"
+  no_log: true
+  become: true
+  with_items: "{{ pki_certs.results }}"
+
+- name: Find existing UUID if it exists
+  shell: grep "^loose-group_replication_group_name" /etc/mysql/mysql.cnf | rev | cut -c -36 | rev
+  run_once: true
+  changed_when: false
+  register: existing_cluster_uuid
+
+- name: Generate UUID incase no previous value was present
+  command: uuidgen
+  run_once: true
+  changed_when: false
+  register: new_cluster_uuid
+
+
+
+- name: Set the root password
+  mysql_user:
+    name: root
+    password: "{{ mysql_root_password }}"
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  tags: [ mysql, mysql-root ]
+  ignore_errors: yes
+
+- name: Remove all anonymous user accounts
+  mysql_user:
+    name: ''
+    host_all: yes
+    state: absent
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  tags: [ mysql ]
+
+- name: Remove the MySQL test database
+  mysql_db:
+    name: test
+    state: absent
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  tags: [ mysql ]
+
+- name: Initial DB Config
+  template:
+    src: "mysql.cnf.j2"
+    dest: "/etc/mysql/mysql.conf.d/mysqld.cnf"
+  #notify: Restart MySQL
+
+- name: Restart MySQL
+  systemd: name=mysql state=restarted
+
+- name: Check if group replication is already enabled
+  mysql_query:
+    query:
+    - SELECT service_state FROM performance_schema.replication_connection_status WHERE channel_name = 'group_replication_applier'
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  failed_when: false
+  changed_when: false
+  register: group_replication_running
+
+- name: look for vars
+  debug:
+    msg: Result- {{ group_replication_running.query_result }}
+
+- name: Create MySQL user for Replication
+  mysql_query:
+    query:
+    - SET SQL_LOG_BIN=0
+    - CREATE USER IF NOT EXISTS '{{ mysql_replica_user }}'@'%' IDENTIFIED BY '{{ mysql_replica_password }}'
+    - GRANT REPLICATION SLAVE ON *.* TO '{{ mysql_replica_user }}'@'%'
+    - FLUSH PRIVILEGES
+    - SET SQL_LOG_BIN=1
+    - CHANGE MASTER TO MASTER_USER='{{ mysql_replica_user }}', MASTER_PASSWORD='{{ mysql_replica_password }}' FOR CHANNEL 'group_replication_recovery'
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  when: "'ON' not in group_replication_running.query_result"
+  tags: [ mysql ]
+
+- name: Install Plugin for Replication
+  mysql_query:
+    query:
+    - INSTALL PLUGIN group_replication SONAME 'group_replication.so'
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  ignore_errors: yes
+
+- name: Bootstrap group replication on first node
+  mysql_query:
+    query:
+    - SET GLOBAL group_replication_bootstrap_group=ON
+    - START GROUP_REPLICATION
+    - SET GLOBAL group_replication_bootstrap_group=OFF
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  when:
+    - "'ON' not in group_replication_running.query_result"
+    - inventory_hostname == ansible_play_hosts[0]
+
+- name: Begin group replication on remaining nodes
+  mysql_query: 
+    query: START GROUP_REPLICATION
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  when:
+    - "'ON' not in group_replication_running.query_result"
+    - inventory_hostname != ansible_play_hosts[0]
+
+- name: Mark primary master
+  set_fact:
+    primary: true
+  when:
+    - inventory_hostname == ansible_play_hosts[0]
+  tags: [ mysql ]
+

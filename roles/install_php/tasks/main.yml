@@ -1,0 +1,18 @@
+---
+# tasks file for install_php
+- name: Install php
+  apt: 
+    name:
+      - php-mysql
+      - php-fpm
+      - python3-pymysql
+      - php-curl
+      - php-gd
+      - php-mbstring
+      - php-xml
+      - php-xmlrpc
+      - php-soap
+      - php-intl
+      - php-zip
+    update_cache: yes
+    state: latest

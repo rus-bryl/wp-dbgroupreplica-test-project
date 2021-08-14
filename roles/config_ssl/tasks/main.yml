@@ -1,0 +1,40 @@
+---
+# tasks file for config_ssl
+- name: Letcencrypt dir
+  file: path=/var/lib/letsencrypt/.well-known state=directory owner=www-data group=www-data mode=0755
+
+- name: well known challenge
+  copy:
+    src: "well-known"
+    dest: "/etc/nginx/snippets/well-known"
+  notify: Restart Nginx
+
+- name: Site SSL config stage-1
+  template:
+    src: "website-ssl-1.j2"
+    dest: "/etc/nginx/sites-available/{{ project_name }}"
+  notify: Reload Nginx
+
+- name: Obtain Certificate
+  shell: certbot certonly --non-interactive --agree-tos --email admin@{{ http_host }} --webroot -w /var/lib/letsencrypt/ -d {{ http_host }} -d www.{{ http_host }}
+  args:
+    creates: /etc/letsencrypt/live/{{ http_host }}/cert.pem
+
+- name: DH Certificate
+  shell: openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
+  args:
+    creates: /etc/ssl/certs/dhparam.pem
+
+- name: Site SSL config
+  template:
+    src: "website-ssl-2.j2"
+    dest: "/etc/nginx/sites-available/{{ project_name }}"
+  notify: Reload Nginx
+
+- name: Certificates renew
+  cron:
+    name: certbot
+    hour: "0"
+    day: "1"
+    job: "certbot renew & > /dev/null"
+    state: present
