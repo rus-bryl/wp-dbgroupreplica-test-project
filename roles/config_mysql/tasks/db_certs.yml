@@ -1,0 +1,27 @@
+---
+# tasks file for db_serts
+- name: Grab the SSL assets from one server
+  slurp:
+    src: "/var/lib/mysql/{{ item }}"
+  become: true
+  run_once: true
+  register: pki_certs
+  with_items:
+    - ca.pem
+    - ca-key.pem
+    - server-cert.pem
+    - server-key.pem
+    - client-cert.pem
+    - client-key.pem
+  tags: [ mysql ]
+
+- name: Write the SSL assets to the remaining servers
+  copy:
+    dest: "/var/lib/mysql/{{ item.item }}"
+    content: "{{ item.content | b64decode }}"
+    owner: mysql
+    group: mysql
+    mode: "0600"
+  no_log: true
+  become: true
+  with_items: "{{ pki_certs.results }}"

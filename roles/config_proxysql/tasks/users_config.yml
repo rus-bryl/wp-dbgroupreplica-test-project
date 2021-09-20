@@ -1,0 +1,13 @@
+---
+# tasks file for users_config
+
+- name: Create user for Wordpress
+  proxysql_mysql_users:
+    login_user: admin
+    login_password: admin
+    username: "{{ mysql_wp_user }}"
+    password: "{{ mysql_wp_password }}"
+    default_hostgroup: 0
+    state: present
+    load_to_runtime: yes
+    save_to_disk: yes

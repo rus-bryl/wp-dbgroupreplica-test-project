@@ -1,0 +1,20 @@
+---
+# tasks file for query_rules
+
+- name: Add query rule 1
+  proxysql_query_rules:
+    login_user: admin
+    login_password: admin
+    active: 1
+    match_pattern: '^SELECT.*'
+    destination_hostgroup: 1
+    apply: 0
+
+- name: Add query rule 2
+  proxysql_query_rules:
+    login_user: admin
+    login_password: admin
+    active: 1
+    match_pattern: '^SELECT.*FOR UPDATE'
+    destination_hostgroup: 0
+    apply: 1

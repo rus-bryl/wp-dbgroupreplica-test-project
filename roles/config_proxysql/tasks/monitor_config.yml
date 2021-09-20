@@ -1,0 +1,47 @@
+---
+# tasks file for monitor_config
+
+- name: Configure Monitoring mysql-monitor_connect_interval
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_connect_interval
+    value: 2000
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Configure Monitoring mysql-monitor_ping_interval
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_ping_interval
+    value: 2000
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Configure Monitoring mysql-monitor_read_only_interval
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_read_only_interval
+    value: 2000
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Configure Monitoring mysql-monitor_connect_timeout
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_connect_timeout
+    value: 1000
+    load_to_runtime: yes
+    save_to_disk: yes
+
+- name: Configure Monitoring mysql-monitor_ping_timeout
+  proxysql_global_variables:
+    login_user: admin
+    login_password: admin
+    variable: mysql-monitor_ping_timeout
+    value: 500
+    load_to_runtime: yes
+    save_to_disk: yes

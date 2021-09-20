@@ -1,28 +1,8 @@
 ---
 # tasks file for config_mysql_master
-- name: Create MySQL user for WordPress
-  mysql_user:
-    name: "{{ mysql_wp_user }}"
-    password: "{{ mysql_wp_password }}"
-    priv: "{{ mysql_db }}.*:ALL"
-    host: "{{ hostvars[groups['webservers'][0]].ansible_default_ipv4.address }}"
-    state: present
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-  register: mysql_config_status
-  tags: [ mysql ]
 
-- name: Create MySQL user ProxySQL monitor
-  mysql_user:
-    name: monitor
-    password: monitor
-    priv: "{{ mysql_db }}.*:ALL"
-    host: "{{ hostvars[item].ansible_default_ipv4.address }}"
-    state: present
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-  loop: "{{ groups['proxysql'] }}"
-  tags: [ mysql ]
+- name: Config DB Users
+  import_tasks: db_users.yml
 
 - name: Creates database for WordPress
   mysql_db:
