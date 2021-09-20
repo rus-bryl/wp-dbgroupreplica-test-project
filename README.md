@@ -5,7 +5,7 @@ WordPress Deploy with MySQL Single-Primary Group Replication
 - Git
 - Ansible version: 2.11 or higher
 - Ansible plugins:
-  - community.mysql - to unctall it use: `ansible-galaxy collection install community.mysql`
+  - community.mysql - to install it use: `ansible-galaxy collection install community.mysql`
 
 
 
